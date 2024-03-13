@@ -34,6 +34,7 @@ pub fn is_alphanumeric(ch: char) -> bool {
 
 ///
 pub fn try_escape_char(str: Option<&str>) -> Option<char> {
+    // check for \x{00} \u{000000}
     match str {
         Some("\\n") => Some('\n'),
         Some("\\r") => Some('\r'),

@@ -100,12 +100,12 @@ impl<'a, 'b, 'c> Scanner<'a> {
 
         let str = &self.compiler.contents[start..self.read];
 
-        let token_type = match TokenType::try_keyword(str) {
+        let token_type = match Kind::try_keyword(str) {
             Some(keyword) => keyword,
             None => {
-                match TokenType::try_mode(str) {
+                match Kind::try_mode(str) {
                     Some(mode) => mode,
-                    None => TokenType::Tag(str.into())
+                    None => Kind::Tag(str.into())
                 }
             }
         };
@@ -136,8 +136,8 @@ impl<'a, 'b, 'c> Scanner<'a> {
 
         let str = &self.compiler.contents[start..self.read];
         let ttype = match is_float {
-            false => TokenType::Integer(str.into()),
-            _     => TokenType::Float(str.into())
+            false => Kind::Integer(str.into()),
+            _     => Kind::Float(str.into())
         };
 
         Token::new(
@@ -238,7 +238,7 @@ impl<'a, 'b, 'c> Scanner<'a> {
         let str = self.handle_escape_characters(&str);
 
         Token::new(
-            TokenType::String(str.into()),
+            Kind::String(str.into()),
             self.compiler.input.clone(),
             self.token_pos.clone()
         )
@@ -251,18 +251,6 @@ impl<'a, 'b, 'c> Scanner<'a> {
         self.advance(1);
         while self.peek() != '"' && self.peek() != '\0' {
             match self.peek() {
-                '\\' => {
-                    self.advance(1);
-
-                    match self.peek() {
-                        '|' => str.push('|'),
-                        '"' => break,
-                        ch => {
-                            str.push('\\');
-                            str.push(ch);
-                        }
-                    }
-                },
                 '\n' => {
                     str.push('\n');
                     self.advance(2);
@@ -275,7 +263,6 @@ impl<'a, 'b, 'c> Scanner<'a> {
                                 ch => str.push(ch)
                             }
                         },
-                        '"' => break,
                         _ => {
                             self.compiler.errors.push(Error::new(
                                 self.compiler.input.clone(),
@@ -307,7 +294,7 @@ impl<'a, 'b, 'c> Scanner<'a> {
         let str = self.handle_escape_characters(&str);
 
         Token::new(
-            TokenType::String(str.into()),
+            Kind::String(str.into()),
             self.compiler.input.clone(),
             self.token_pos.clone()
         )
@@ -316,8 +303,8 @@ impl<'a, 'b, 'c> Scanner<'a> {
     // Trys to read a operator composed of two or more characters from the source
     fn try_compound_operator(
         &'b mut self,
-        matches: Vec<(usize, &str, TokenType)>
-    ) -> Option<TokenType> {
+        matches: Vec<(usize, &str, Kind)>
+    ) -> Option<Kind> {
         for (count, operator, kind) in matches.iter() {
             let contents = &self.compiler.contents;
             let start = self.read;
@@ -413,7 +400,7 @@ impl<'a, 'b, 'c> Scanner<'a> {
                     _ => {
                         self.advance(1);
                         Token::new(
-                            TokenType::Slash,
+                            Kind::Slash,
                             self.compiler.input.clone(),
                             self.token_pos.clone()
                         )
@@ -423,15 +410,15 @@ impl<'a, 'b, 'c> Scanner<'a> {
             // Operators which may be multiple characters long
             '=' => {
                 let kind = self.try_compound_operator(vec![
-                    (2, "=>", TokenType::WideArrow),
-                    (2, "==", TokenType::Equal)
+                    (2, "=>", Kind::WideArrow),
+                    (2, "==", Kind::Equal)
                 ]);
 
                 let kind = match kind {
                     Some(k) => k,
                     None => {
                         self.advance(1);
-                        TokenType::Assign
+                        Kind::Assign
                     }
                 };
 
@@ -443,14 +430,14 @@ impl<'a, 'b, 'c> Scanner<'a> {
             },
             ':' => {
                 let kind = self.try_compound_operator(vec![
-                    (2, ":=", TokenType::AssignExp)
+                    (2, ":=", Kind::AssignExp)
                 ]);
 
                 let kind = match kind {
                     Some(k) => k,
                     None => {
                         self.advance(1);
-                        TokenType::Colon
+                        Kind::Colon
                     }
                 };
 
@@ -462,15 +449,15 @@ impl<'a, 'b, 'c> Scanner<'a> {
             },
             '>' => {
                 let kind = self.try_compound_operator(vec![
-                    (2, ">=", TokenType::GreaterEq),
-                    (2, ">>", TokenType::RightShift)
+                    (2, ">=", Kind::GreaterEq),
+                    (2, ">>", Kind::RightShift)
                 ]);
 
                 let kind = match kind {
                     Some(k) => k,
                     None => {
                         self.advance(1);
-                        TokenType::Greater
+                        Kind::Greater
                     }
                 };
 
@@ -482,16 +469,17 @@ impl<'a, 'b, 'c> Scanner<'a> {
             },
             '<' => {
                 let kind = self.try_compound_operator(vec![
-                    (2, "<=", TokenType::LesserEq),
-                    (2, "<<", TokenType::LeftShift),
-                    (2, "<|", TokenType::ForwardApp)
+                    (2, "<=", Kind::LesserEq),
+                    (2, "<<", Kind::LeftShift),
+                    (2, "<|", Kind::ForwardApp),
+                    (2, "<>", Kind::Concat)
                 ]);
 
                 let kind = match kind {
                     Some(k) => k,
                     None => {
                         self.advance(1);
-                        TokenType::Lesser
+                        Kind::Lesser
                     }
                 };
 
@@ -503,15 +491,15 @@ impl<'a, 'b, 'c> Scanner<'a> {
             },
             '-' => {
                 let kind = self.try_compound_operator(vec![
-                    (2, "->", TokenType::Arrow),
-                    (2, "--", TokenType::Decrement)
+                    (2, "->", Kind::Arrow),
+                    (2, "--", Kind::Decrement)
                 ]);
 
                 let kind = match kind {
                     Some(k) => k,
                     None => {
                         self.advance(1);
-                        TokenType::Minus
+                        Kind::Minus
                     }
                 };
 
@@ -523,14 +511,14 @@ impl<'a, 'b, 'c> Scanner<'a> {
             },
             '+' => {
                 let kind = self.try_compound_operator(vec![
-                    (2, "++", TokenType::Increment)
+                    (2, "++", Kind::Increment)
                 ]);
 
                 let kind = match kind {
                     Some(k) => k,
                     None => {
                         self.advance(1);
-                        TokenType::Plus
+                        Kind::Plus
                     }
                 };
 
@@ -542,14 +530,14 @@ impl<'a, 'b, 'c> Scanner<'a> {
             },
             '*' => {
                 let kind = self.try_compound_operator(vec![
-                    (2, "**", TokenType::Power)
+                    (2, "**", Kind::Power)
                 ]);
 
                 let kind = match kind {
                     Some(k) => k,
                     None => {
                         self.advance(1);
-                        TokenType::Asterisk
+                        Kind::Asterisk
                     }
                 };
 
@@ -561,15 +549,15 @@ impl<'a, 'b, 'c> Scanner<'a> {
             },
             '.' => {
                 let kind = self.try_compound_operator(vec![
-                    (3, "..=", TokenType::RangeInc),
-                    (2, "..", TokenType::RangeExc)
+                    (3, "..=", Kind::RangeInc),
+                    (2, "..", Kind::RangeExc)
                 ]);
 
                 let kind = match kind {
                     Some(k) => k,
                     None => {
                         self.advance(1);
-                        TokenType::Dot
+                        Kind::Dot
                     }
                 };
 
@@ -582,21 +570,21 @@ impl<'a, 'b, 'c> Scanner<'a> {
             '~' => {
                 self.advance(1);
                 Token::new(
-                    TokenType::Tilde,
+                    Kind::Tilde,
                     self.compiler.input.clone(),
                     self.token_pos.clone()
                 )
             },
             '!' => {
                 let kind = self.try_compound_operator(vec![
-                    (2, "!=", TokenType::NotEqual)
+                    (2, "!=", Kind::NotEqual)
                 ]);
 
                 let kind = match kind {
                     Some(k) => k,
                     None => {
                         self.advance(1);
-                        TokenType::Bang
+                        Kind::Bang
                     }
                 };
 
@@ -608,14 +596,14 @@ impl<'a, 'b, 'c> Scanner<'a> {
             },
             '|' => {
                 let kind = self.try_compound_operator(vec![
-                    (2, "|>", TokenType::ReverseApp)
+                    (2, "|>", Kind::ReverseApp)
                 ]);
 
                 let kind = match kind {
                     Some(k) => k,
                     None => {
                         self.advance(1);
-                        TokenType::Pipe
+                        Kind::Pipe
                     }
                 };
 
@@ -627,7 +615,7 @@ impl<'a, 'b, 'c> Scanner<'a> {
             },
             '\0' => {
                 Token::new(
-                    TokenType::Eof,
+                    Kind::Eof,
                     self.compiler.input.clone(),
                     self.token_pos.clone()
                 )
@@ -636,7 +624,7 @@ impl<'a, 'b, 'c> Scanner<'a> {
             ch => {
                 self.advance(1);
                 Token::new(
-                    TokenType::from_char(ch),
+                    Kind::from_char(ch),
                     self.compiler.input.clone(),
                     self.token_pos.clone()
                 )
@@ -661,7 +649,7 @@ impl<'a, 'b, 'c> Scanner<'a> {
     /*fn scan(&'a mut self) -> Vec<Token> {
         let mut token = self.next_token();
 
-        while token.kind != TokenType::Eof {
+        while token.kind != Kind::Eof {
             self.tokens.push(token);
             token = self.next_token();
         }
@@ -680,7 +668,7 @@ mod tests {
         let mut i = 0;
 
         let mut token = scanner.next_token();
-        while token.kind != TokenType::Eof {
+        while token.kind != Kind::Eof {
             assert_eq!(token, expected[i]);
             i = i + 1;
 
@@ -697,32 +685,32 @@ mod tests {
 
         let expected = vec![
             Token::new(
-                TokenType::Keyword(Keyword::Let),
+                Kind::Keyword(Keyword::Let),
                 "next token scanning test".into(),
                 Position::new(1, 1)
             ),
             Token::new(
-                TokenType::Tag("x".into()),
+                Kind::Tag("x".into()),
                 "next token scanning test".into(),
                 Position::new(1, 5)
             ),
             Token::new(
-                TokenType::Assign,
+                Kind::Assign,
                 "next token scanning test".into(),
                 Position::new(1, 7)
             ),
             Token::new(
-                TokenType::Integer("12_000".into()),
+                Kind::Integer("12_000".into()),
                 "next token scanning test".into(),
                 Position::new(1, 9)
             ),
             Token::new(
-                TokenType::Float("12_000.50".into()),
+                Kind::Float("12_000.50".into()),
                 "next token scanning test".into(),
                 Position::new(1, 16)
             ),
             Token::new(
-                TokenType::Eof,
+                Kind::Eof,
                 "next token scanning test".into(),
                 Position::new(1, 25)
             )
@@ -744,87 +732,87 @@ mod tests {
 
         let expected = vec![
             Token::new(
-                TokenType::Equal,
+                Kind::Equal,
                 "compound operator scanning test".into(),
                 Position::new(1, 1)
             ),
             Token::new(
-                TokenType::NotEqual,
+                Kind::NotEqual,
                 "compound operator scanning test".into(),
                 Position::new(1, 4)
             ),
             Token::new(
-                TokenType::GreaterEq,
+                Kind::GreaterEq,
                 "compound operator scanning test".into(),
                 Position::new(1, 7)
             ),
             Token::new(
-                TokenType::LesserEq,
+                Kind::LesserEq,
                 "compound operator scanning test".into(),
                 Position::new(1, 10)
             ),
             Token::new(
-                TokenType::ReverseApp,
+                Kind::ReverseApp,
                 "compound operator scanning test".into(),
                 Position::new(1, 13)
             ),
             Token::new(
-                TokenType::ForwardApp,
+                Kind::ForwardApp,
                 "compound operator scanning test".into(),
                 Position::new(1, 16)
             ),
             Token::new(
-                TokenType::LeftShift,
+                Kind::LeftShift,
                 "compound operator scanning test".into(),
                 Position::new(1, 19)
             ),
             Token::new(
-                TokenType::RightShift,
+                Kind::RightShift,
                 "compound operator scanning test".into(),
                 Position::new(1, 22)
             ),
             Token::new(
-                TokenType::Increment,
+                Kind::Increment,
                 "compound operator scanning test".into(),
                 Position::new(1, 25)
             ),
             Token::new(
-                TokenType::Decrement,
+                Kind::Decrement,
                 "compound operator scanning test".into(),
                 Position::new(1, 28)
             ),
             Token::new(
-                TokenType::Power,
+                Kind::Power,
                 "compound operator scanning test".into(),
                 Position::new(1, 31)
             ),
             Token::new(
-                TokenType::Arrow,
+                Kind::Arrow,
                 "compound operator scanning test".into(),
                 Position::new(1, 34)
             ),
             Token::new(
-                TokenType::WideArrow,
+                Kind::WideArrow,
                 "compound operator scanning test".into(),
                 Position::new(1, 37)
             ),
             Token::new(
-                TokenType::RangeExc,
+                Kind::RangeExc,
                 "compound operator scanning test".into(),
                 Position::new(1, 40)
             ),
             Token::new(
-                TokenType::RangeInc,
+                Kind::RangeInc,
                 "compound operator scanning test".into(),
                 Position::new(1, 43)
             ),
             Token::new(
-                TokenType::AssignExp,
+                Kind::AssignExp,
                 "compound operator scanning test".into(),
                 Position::new(1, 47)
             ),
             Token::new(
-                TokenType::Eof,
+                Kind::Eof,
                 "compound operator scanning test".into(),
                 Position::new(1, 49)
             )
@@ -846,27 +834,27 @@ mod tests {
 
         let expected = vec![
             Token::new(
-                TokenType::Keyword(Keyword::Let),
+                Kind::Keyword(Keyword::Let),
                 "string reading scanning test".into(),
                 Position::new(1, 1)
             ),
             Token::new(
-                TokenType::Tag("x".into()),
+                Kind::Tag("x".into()),
                 "string reading scanning test".into(),
                 Position::new(1, 5)
             ),
             Token::new(
-                TokenType::Assign,
+                Kind::Assign,
                 "string reading scanning test".into(),
                 Position::new(1, 7)
             ),
             Token::new(
-                TokenType::String("Hello, world!".into()),
+                Kind::String("Hello, world!".into()),
                 "string reading scanning test".into(),
                 Position::new(1, 9)
             ),
             Token::new(
-                TokenType::Eof,
+                Kind::Eof,
                 "string reading scanning test".into(),
                 Position::new(1, 24)
             )
@@ -890,27 +878,27 @@ mod tests {
 
         let expected = vec![
             Token::new(
-                TokenType::Keyword(Keyword::Let),
+                Kind::Keyword(Keyword::Let),
                 "multiline string scanning test".into(),
                 Position::new(1, 1)
             ),
             Token::new(
-                TokenType::Tag("x".into()),
+                Kind::Tag("x".into()),
                 "multiline string scanning test".into(),
                 Position::new(1, 5)
             ),
             Token::new(
-                TokenType::Assign,
+                Kind::Assign,
                 "multiline string scanning test".into(),
                 Position::new(1, 7)
             ),
             Token::new(
-                TokenType::String("\n Hello, world!\n".into()),
+                Kind::String("\n Hello, world!\n".into()),
                 "multiline string scanning test".into(),
                 Position::new(1, 9)
             ),
             Token::new(
-                TokenType::Eof,
+                Kind::Eof,
                 "multiline string scanning test".into(),
                 Position::new(3, 3)
             )
@@ -932,27 +920,27 @@ mod tests {
 
         let expected = vec![
             Token::new(
-                TokenType::Keyword(Keyword::Let),
+                Kind::Keyword(Keyword::Let),
                 "escape character scanning test".into(),
                 Position::new(1, 1)
             ),
             Token::new(
-                TokenType::Tag("x".into()),
+                Kind::Tag("x".into()),
                 "escape character scanning test".into(),
                 Position::new(1, 5)
             ),
             Token::new(
-                TokenType::Assign,
+                Kind::Assign,
                 "escape character scanning test".into(),
                 Position::new(1, 7)
             ),
             Token::new(
-                TokenType::String("Hello, \n\\sworld!".into()),
+                Kind::String("Hello, \n\\sworld!".into()),
                 "escape character scanning test".into(),
                 Position::new(1, 9)
             ),
             Token::new(
-                TokenType::Eof,
+                Kind::Eof,
                 "escape character scanning test".into(),
                 Position::new(1, 28)
             )
@@ -978,22 +966,22 @@ mod tests {
 
         let expected = vec![
             Token::new(
-                TokenType::Keyword(Keyword::Let),
+                Kind::Keyword(Keyword::Let),
                 "single comment skip scanning test".into(),
                 Position::new(1, 1)
             ),
             Token::new(
-                TokenType::Tag("x".into()),
+                Kind::Tag("x".into()),
                 "single comment skip scanning test".into(),
                 Position::new(1, 5)
             ),
             Token::new(
-                TokenType::Assign,
+                Kind::Assign,
                 "single comment skip scanning test".into(),
                 Position::new(1, 7)
             ),
             Token::new(
-                TokenType::Eof,
+                Kind::Eof,
                 "single comment skip scanning test".into(),
                 Position::new(1, 27)
             )
@@ -1017,22 +1005,22 @@ mod tests {
 
         let expected = vec![
             Token::new(
-                TokenType::Keyword(Keyword::Let),
+                Kind::Keyword(Keyword::Let),
                 "multi comment skip scanning test".into(),
                 Position::new(1, 1)
             ),
             Token::new(
-                TokenType::Tag("x".into()),
+                Kind::Tag("x".into()),
                 "multi comment skip scanning test".into(),
                 Position::new(1, 5)
             ),
             Token::new(
-                TokenType::Assign,
+                Kind::Assign,
                 "multi comment skip scanning test".into(),
                 Position::new(1, 7)
             ),
             Token::new(
-                TokenType::Eof,
+                Kind::Eof,
                 "multi comment skip scanning test".into(),
                 Position::new(3, 3)
             )

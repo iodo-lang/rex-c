@@ -131,7 +131,7 @@ impl<'a, 'b> Compiler {
         let mut scanner = Scanner::new(self);
 
         let mut token = scanner.next_token();
-        while token.kind != TokenType::Eof {
+        while token.kind != Kind::Eof {
             dbg!(token);
             token = scanner.next_token();
         }

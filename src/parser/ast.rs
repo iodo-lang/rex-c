@@ -16,7 +16,7 @@ pub enum Node {
 
 #[derive(Debug)]
 pub struct Binding {
-    pub kind: TokenType,
+    pub kind: Keyword,
     pub name: Arc<str>,
     pub expl_type: Option<Type>,
     pub value: Expression
@@ -94,20 +94,20 @@ pub struct FnCall {
 
 #[derive(Debug)]
 pub struct Prefix {
-    pub operator: TokenType,
+    pub operator: Kind,
     pub value: Expression
 }
 
 #[derive(Debug)]
 pub struct Infix {
-    pub operator: TokenType,
+    pub operator: Kind,
     pub lhs: Expression,
     pub rhs: Expression
 }
 
 #[derive(Debug)]
 pub struct Postfix {
-    pub operator: TokenType,
+    pub operator: Kind,
     pub value: Expression
 }
 

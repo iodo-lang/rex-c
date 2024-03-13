@@ -10,7 +10,7 @@ use std::sync::Arc;
 /// Contains a token's type and position, and file it belongs to
 #[derive(Clone, Debug, PartialEq)]
 pub struct Token {
-    pub kind: TokenType,
+    pub kind: Kind,
     pub file: Arc<str>,
     pub pos: Position
 }
@@ -31,7 +31,7 @@ impl Token {
     /// ```
     ///
     /// ```
-    pub fn new(kind: TokenType, file: Arc<str>, pos: Position) -> Self {
+    pub fn new(kind: Kind, file: Arc<str>, pos: Position) -> Self {
         Self {
             kind,
             file,
@@ -42,11 +42,12 @@ impl Token {
 
 /// Represents the type of a token
 #[derive(Clone, Debug, PartialEq)]
-pub enum TokenType {
+pub enum Kind {
     Tag(Arc<str>),
     Keyword(Keyword),
     Mode(Mode),
     String(Box<str>),
+    Char(char),
     Regex(Box<str>),
     Integer(Box<str>),
     Float(Box<str>),
@@ -80,6 +81,7 @@ pub enum TokenType {
     RangeInc,             // ..=
     ForwardApp,           // |>
     ReverseApp,           // <|
+    Concat,               // <>
     // Arithmetic
     Plus,                 // +
     Minus,                // -
@@ -109,192 +111,193 @@ pub enum TokenType {
     Eof
 }
 
-impl TokenType {
-    /// Converts a char into it's corresponding TokenType
+impl Kind {
+    /// Converts a char into it's corresponding Kind
     ///
     /// # Arguments
     /// * `ch` -
     ///
     /// # Returns
-    /// * A TokenType, whose value will be Illegal if the char is not supported
+    /// * A Kind, whose value will be Illegal if the char is not supported
     ///
     /// # Examples
     ///
     /// ```
     ///
     /// ```
-    pub fn from_char(ch: char) -> TokenType {
+    pub fn from_char(ch: char) -> Kind {
         match ch {
-            '=' => TokenType::Assign,
+            '=' => Kind::Assign,
 
-            '.'  => TokenType::Dot,
-            ','  => TokenType::Comma,
-            '('  => TokenType::LeftParen,
-            ')'  => TokenType::RightParen,
-            '['  => TokenType::LeftBracket,
-            ']'  => TokenType::RightBracket,
-            '{'  => TokenType::LeftSquirly,
-            '}'  => TokenType::RightSquirly,
-            '\'' => TokenType::SingleQuote,
-            '"'  => TokenType::DoubleQuote,
-            '`'  => TokenType::Backtick,
-            '\\' => TokenType::Backslash,
-            ':'  => TokenType::Colon,
-            ';'  => TokenType::Semicolon,
+            '.'  => Kind::Dot,
+            ','  => Kind::Comma,
+            '('  => Kind::LeftParen,
+            ')'  => Kind::RightParen,
+            '['  => Kind::LeftBracket,
+            ']'  => Kind::RightBracket,
+            '{'  => Kind::LeftSquirly,
+            '}'  => Kind::RightSquirly,
+            '\'' => Kind::SingleQuote,
+            '"'  => Kind::DoubleQuote,
+            '`'  => Kind::Backtick,
+            '\\' => Kind::Backslash,
+            ':'  => Kind::Colon,
+            ';'  => Kind::Semicolon,
 
-            '@'  => TokenType::Address,
-            '$'  => TokenType::Cash,
-            '#'  => TokenType::Pound,
-            '!'  => TokenType::Bang,
-            '?'  => TokenType::Question,
+            '@'  => Kind::Address,
+            '$'  => Kind::Cash,
+            '#'  => Kind::Pound,
+            '!'  => Kind::Bang,
+            '?'  => Kind::Question,
 
-            '+'  => TokenType::Plus,
-            '-'  => TokenType::Minus,
-            '*'  => TokenType::Asterisk,
-            '/'  => TokenType::Slash,
-            '%'  => TokenType::Percent,
+            '+'  => Kind::Plus,
+            '-'  => Kind::Minus,
+            '*'  => Kind::Asterisk,
+            '/'  => Kind::Slash,
+            '%'  => Kind::Percent,
 
-            '&'  => TokenType::Ampersand,
-            '|'  => TokenType::Pipe,
-            '^'  => TokenType::Caret,
-            '~'  => TokenType::Tilde,
+            '&'  => Kind::Ampersand,
+            '|'  => Kind::Pipe,
+            '^'  => Kind::Caret,
+            '~'  => Kind::Tilde,
 
-            '<'  => TokenType::Lesser,
-            '>'  => TokenType::Greater,
+            '<'  => Kind::Lesser,
+            '>'  => Kind::Greater,
 
-            '\n' => TokenType::Newline,
-            '\0' => TokenType::Eof,
-            _    => TokenType::Illegal
+            '\n' => Kind::Newline,
+            '\0' => Kind::Eof,
+            _    => Kind::Illegal
         }
     }
 
-    /// Tries to create a TokenType from a string representing a compound operator
+    /// Tries to create a Kind from a string representing a compound operator
     ///
     /// # Arguments
     /// * `str` -
     ///
     /// # Returns
-    /// * An optional TokenType
+    /// * An optional Kind
     ///
     /// # Examples
     ///
     /// ```
     ///
     /// ```
-    pub fn try_from_str(str: &str) -> Option<TokenType> {
+    pub fn try_from_str(str: &str) -> Option<Kind> {
         match str {
-            ":="  => Some(TokenType::AssignExp),
+            ":="  => Some(Kind::AssignExp),
 
-            "->"  => Some(TokenType::Arrow),
-            "=>"  => Some(TokenType::WideArrow),
+            "->"  => Some(Kind::Arrow),
+            "=>"  => Some(Kind::WideArrow),
 
-            ".."  => Some(TokenType::RangeExc),
-            "..=" => Some(TokenType::RangeInc),
-            "|>"  => Some(TokenType::ReverseApp),
-            "<|"  => Some(TokenType::ForwardApp),
+            ".."  => Some(Kind::RangeExc),
+            "..=" => Some(Kind::RangeInc),
+            "|>"  => Some(Kind::ReverseApp),
+            "<|"  => Some(Kind::ForwardApp),
+            "<>"  => Some(Kind::Concat),
 
-            "++"  => Some(TokenType::Increment),
-            "--"  => Some(TokenType::Decrement),
-            "**"  => Some(TokenType::Power),
+            "++"  => Some(Kind::Increment),
+            "--"  => Some(Kind::Decrement),
+            "**"  => Some(Kind::Power),
 
-            "<<"  => Some(TokenType::LeftShift),
-            ">>"  => Some(TokenType::RightShift),
+            "<<"  => Some(Kind::LeftShift),
+            ">>"  => Some(Kind::RightShift),
 
-            "<="  => Some(TokenType::LesserEq),
-            ">="  => Some(TokenType::GreaterEq),
-            "=="  => Some(TokenType::NotEqual),
-            "!="  => Some(TokenType::Equal),
+            "<="  => Some(Kind::LesserEq),
+            ">="  => Some(Kind::GreaterEq),
+            "=="  => Some(Kind::NotEqual),
+            "!="  => Some(Kind::Equal),
 
             _     => None
         }
 
     }
 
-    /// Tries to create a TokenType from a string representing a keyword
+    /// Tries to create a Kind from a string representing a keyword
     ///
     /// # Arguments
     /// * `str` -
     ///
     /// # Returns
-    /// * An optional TokenType
+    /// * An optional Kind
     ///
     /// # Examples
     ///
     /// ```
     ///
     /// ```
-    pub fn try_keyword(str: &str) -> Option<TokenType> {
+    pub fn try_keyword(str: &str) -> Option<Kind> {
         use Keyword::*;
         match str {
-            "const"  => Some(TokenType::Keyword(Const)),
-            "let"  => Some(TokenType::Keyword(Let)),
-            "pub"  => Some(TokenType::Keyword(Pub)),
-            "return" => Some(TokenType::Keyword(Return)),
-            "do"  => Some(TokenType::Keyword(Do)),
-            "end"  => Some(TokenType::Keyword(End)),
-            "record"  => Some(TokenType::Keyword(Record)),
-            "variant"  => Some(TokenType::Keyword(Variant)),
-            "use"  => Some(TokenType::Keyword(Use)),
-            "interface"  => Some(TokenType::Keyword(Interface)),
-            "module"  => Some(TokenType::Keyword(Module)),
-            "defer"  => Some(TokenType::Keyword(Defer)),
-            "when"  => Some(TokenType::Keyword(When)),
-            "true"  => Some(TokenType::Keyword(True)),
-            "false"  => Some(TokenType::Keyword(False)),
-            "for"  => Some(TokenType::Keyword(For)),
-            "while"  => Some(TokenType::Keyword(While)),
-            "break"  => Some(TokenType::Keyword(Break)),
-            "continue"  => Some(TokenType::Keyword(Continue)),
-            "match"  => Some(TokenType::Keyword(Match)),
-            "if"  => Some(TokenType::Keyword(If)),
-            "else"  => Some(TokenType::Keyword(Else)),
-            "and"  => Some(TokenType::Keyword(And)),
-            "or"  => Some(TokenType::Keyword(Or)),
-            "not"  => Some(TokenType::Keyword(Not)),
-            "inline"  => Some(TokenType::Keyword(Inline)),
-            "test"  => Some(TokenType::Keyword(Test)),
-            "as"  => Some(TokenType::Keyword(As)),
-            "in"  => Some(TokenType::Keyword(In)),
+            "const"  => Some(Kind::Keyword(Const)),
+            "let"  => Some(Kind::Keyword(Let)),
+            "pub"  => Some(Kind::Keyword(Pub)),
+            "return" => Some(Kind::Keyword(Return)),
+            "do"  => Some(Kind::Keyword(Do)),
+            "end"  => Some(Kind::Keyword(End)),
+            "record"  => Some(Kind::Keyword(Record)),
+            "variant"  => Some(Kind::Keyword(Variant)),
+            "use"  => Some(Kind::Keyword(Use)),
+            "interface"  => Some(Kind::Keyword(Interface)),
+            "module"  => Some(Kind::Keyword(Module)),
+            "defer"  => Some(Kind::Keyword(Defer)),
+            "true"  => Some(Kind::Keyword(True)),
+            "false"  => Some(Kind::Keyword(False)),
+            "for"  => Some(Kind::Keyword(For)),
+            "while"  => Some(Kind::Keyword(While)),
+            "break"  => Some(Kind::Keyword(Break)),
+            "continue"  => Some(Kind::Keyword(Continue)),
+            "match"  => Some(Kind::Keyword(Match)),
+            "if"  => Some(Kind::Keyword(If)),
+            "else"  => Some(Kind::Keyword(Else)),
+            "and"  => Some(Kind::Keyword(And)),
+            "or"  => Some(Kind::Keyword(Or)),
+            "not"  => Some(Kind::Keyword(Not)),
+            "inline"  => Some(Kind::Keyword(Inline)),
+            "test"  => Some(Kind::Keyword(Test)),
+            "fn"  => Some(Kind::Keyword(Fn)),
+            "in"  => Some(Kind::Keyword(In)),
             // Reserved
-            "private"  => Some(TokenType::Keyword(Private)),
-            "derive"  => Some(TokenType::Keyword(Derive)),
-            "static"  => Some(TokenType::Keyword(Static)),
-            "macro"  => Some(TokenType::Keyword(Macro)),
-            "from"  => Some(TokenType::Keyword(From)),
-            "impl"  => Some(TokenType::Keyword(Impl)),
-            "any"  => Some(TokenType::Keyword(Any)),
-            "fn"  => Some(TokenType::Keyword(Fn)),
+            "private"  => Some(Kind::Keyword(Private)),
+            "derive"  => Some(Kind::Keyword(Derive)),
+            "static"  => Some(Kind::Keyword(Static)),
+            "macro"  => Some(Kind::Keyword(Macro)),
+            "from"  => Some(Kind::Keyword(From)),
+            "impl"  => Some(Kind::Keyword(Impl)),
+            "when"  => Some(Kind::Keyword(When)),
+            "any"  => Some(Kind::Keyword(Any)),
+            "as"  => Some(Kind::Keyword(As)),
 
             _     => None
         }
     }
 
-    /// Tries to create a TokenType from a string representing a mode
+    /// Tries to create a Kind from a string representing a mode
     ///
     /// # Arguments
     /// * `str` -
     ///
     /// # Returns
-    /// * An optional TokenType
+    /// * An optional Kind
     ///
     /// # Examples
     ///
     /// ```
     ///
     /// ```
-    pub fn try_mode(str: &str) -> Option<TokenType> {
+    pub fn try_mode(str: &str) -> Option<Kind> {
         use Mode::*;
         match str {
-            "comptime"  => Some(TokenType::Mode(Comptime)),
-            "mut"  => Some(TokenType::Mode(Mut)),
-            "mov"  => Some(TokenType::Mode(Mov)),
-            "loc"  => Some(TokenType::Mode(Loc)),
+            "comptime"  => Some(Kind::Mode(Comptime)),
+            "mut"  => Some(Kind::Mode(Mut)),
+            "mov"  => Some(Kind::Mode(Mov)),
+            "loc"  => Some(Kind::Mode(Loc)),
 
             _     => None
         }
     }
 
-    /// Converts a TokenType to a string slice
+    /// Converts a Kind to a string slice
     ///
     /// # Arguments
     ///
@@ -326,7 +329,6 @@ pub enum Keyword {
     Interface,
     Module,
     Defer,
-    When,
     True,
     False,
     For,
@@ -341,7 +343,7 @@ pub enum Keyword {
     Not,
     Inline,
     Test,
-    As,
+    Fn,
     In,
     // Reserved
     Private,
@@ -350,9 +352,10 @@ pub enum Keyword {
     Macro,
     From,
     Impl,
+    When,
     Any,
     Use,
-    Fn
+    As
 }
 
 impl Keyword {

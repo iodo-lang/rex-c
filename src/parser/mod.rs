@@ -24,8 +24,8 @@ enum Precedence {
 }
 
 impl Precedence {
-    pub fn from_token_type(kind: &TokenType) -> Precedence {
-        use TokenType::*;
+    pub fn from_token_type(kind: &Kind) -> Precedence {
+        use Kind::*;
         use Precedence::*;
 
         match kind {
@@ -69,13 +69,13 @@ impl<'a, 'b> Parser<'a> {
 
     fn skip_semicolon_newline(&'b mut self) {
         match &self.peek.kind {
-            TokenType::Newline | TokenType::Semicolon => self.next_token(1),
+            Kind::Newline | Kind::Semicolon => self.next_token(1),
             _ => ()
         }
     }
 
     fn parse_tag(&'b mut self) -> Result<Arc<str>> {
-        use TokenType::Tag;
+        use Kind::Tag;
 
         match &self.peek.kind {
             Tag(name) => {
@@ -92,7 +92,7 @@ impl<'a, 'b> Parser<'a> {
     }
 
     fn parse_expression_int(&'b mut self) -> Result<Expression> {
-        use TokenType::*;
+        use Kind::*;
 
         if let Integer(i) = &self.read.kind {
             Ok(Expression::Integer(i.clone()))
@@ -130,7 +130,7 @@ impl<'a, 'b> Parser<'a> {
     }
 
     fn parse_expression(&'b mut self, prec: Precedence) -> Result<Expression> {
-        use TokenType::*;
+        use Kind::*;
         use crate::prelude::Keyword::*;
 
         match &self.read.kind {
@@ -148,9 +148,14 @@ impl<'a, 'b> Parser<'a> {
     }
 
     fn parse_binding_statement(&'b mut self) -> Result<Node> {
-        use TokenType::*;
-
-        let kind = self.read.kind.clone();
+        let kind = match &self.read.kind {
+            Kind::Keyword(keyword) => match keyword {
+                Keyword::Let => Keyword::Let,
+                Keyword::Const => Keyword::Const,
+                _ => return Err(anyhow!("todo"))
+            },
+            _ => return Err(anyhow!("todo"))
+        };
 
         let name = self.parse_tag()?;
         self.next_token(1);
@@ -158,7 +163,7 @@ impl<'a, 'b> Parser<'a> {
         let value: Expression;
 
         match &self.peek.kind {
-            Assign => {
+            Kind::Assign => {
                 self.next_token(2);
                 value = self.parse_expression(Precedence::Lowest)?; 
             },
@@ -178,7 +183,7 @@ impl<'a, 'b> Parser<'a> {
     }
 
     fn parse_statement(&'b mut self) -> Result<Node> {
-        use TokenType::Keyword;
+        use Kind::Keyword;
         use crate::prelude::Keyword::{Let, Const};
 
         match self.read.kind {
@@ -192,7 +197,7 @@ impl<'a, 'b> Parser<'a> {
     pub fn parse_program(&'a mut self) -> Result<Ast> {
         let mut nodes = vec![];
 
-        while self.peek.kind != TokenType::Eof {
+        while self.peek.kind != Kind::Eof {
             let stmt = self.parse_statement()?;
             nodes.push(stmt);
         }
