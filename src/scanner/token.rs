@@ -41,7 +41,7 @@ impl Token {
 }
 
 /// Represents the type of a token
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Kind {
     Tag(Arc<str>),
     Keyword(Keyword),
@@ -315,7 +315,7 @@ impl Kind {
 }
 
 /// Enumeration of the keywords supported
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Keyword {
     Const,
     Let,
@@ -377,7 +377,7 @@ impl Keyword {
 }
 
 ///
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Mode {
     Comptime,
     Mut,

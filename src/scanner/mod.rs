@@ -680,7 +680,7 @@ mod tests {
     }
 
     #[test]
-    fn test_next_token() {
+    fn next_token() {
         let source = "let x = 12_000 12_000.50";
 
         let expected = vec![
@@ -727,8 +727,8 @@ mod tests {
     }
 
     #[test]
-    fn test_compound_op() {
-        let source = "== != >= <= |> <| << >> ++ -- ** -> => .. ..= :=";
+    fn compound_op() {
+        let source = "== != >= <= |> <| << <> >> ++ -- ** -> => .. ..= :=";
 
         let expected = vec![
             Token::new(
@@ -767,54 +767,59 @@ mod tests {
                 Position::new(1, 19)
             ),
             Token::new(
-                Kind::RightShift,
+                Kind::Concat,
                 "compound operator scanning test".into(),
                 Position::new(1, 22)
             ),
             Token::new(
-                Kind::Increment,
+                Kind::RightShift,
                 "compound operator scanning test".into(),
                 Position::new(1, 25)
             ),
             Token::new(
-                Kind::Decrement,
+                Kind::Increment,
                 "compound operator scanning test".into(),
                 Position::new(1, 28)
             ),
             Token::new(
-                Kind::Power,
+                Kind::Decrement,
                 "compound operator scanning test".into(),
                 Position::new(1, 31)
             ),
             Token::new(
-                Kind::Arrow,
+                Kind::Power,
                 "compound operator scanning test".into(),
                 Position::new(1, 34)
             ),
             Token::new(
-                Kind::WideArrow,
+                Kind::Arrow,
                 "compound operator scanning test".into(),
                 Position::new(1, 37)
             ),
             Token::new(
-                Kind::RangeExc,
+                Kind::WideArrow,
                 "compound operator scanning test".into(),
                 Position::new(1, 40)
             ),
             Token::new(
-                Kind::RangeInc,
+                Kind::RangeExc,
                 "compound operator scanning test".into(),
                 Position::new(1, 43)
             ),
             Token::new(
+                Kind::RangeInc,
+                "compound operator scanning test".into(),
+                Position::new(1, 46)
+            ),
+            Token::new(
                 Kind::AssignExp,
                 "compound operator scanning test".into(),
-                Position::new(1, 47)
+                Position::new(1, 50)
             ),
             Token::new(
                 Kind::Eof,
                 "compound operator scanning test".into(),
-                Position::new(1, 49)
+                Position::new(1, 52)
             )
         ];
 
@@ -829,7 +834,7 @@ mod tests {
     }
 
     #[test]
-    fn test_string_reading() {
+    fn string_reading() {
         let source = "let x = \"Hello, world!\"";
 
         let expected = vec![
@@ -871,7 +876,7 @@ mod tests {
     }
 
     #[test]
-    fn test_multiline_string_reading() {
+    fn multiline_string_reading() {
         let source = "let x = \"|\n\
             | Hello, world!\n\
             |\"";
@@ -915,7 +920,7 @@ mod tests {
     }
 
     #[test]
-    fn test_escape_characters() {
+    fn escape_characters() {
         let source = "let x = \"Hello, \\n\\sworld!\"";
 
         let expected = vec![
@@ -961,7 +966,7 @@ mod tests {
     }
 
     #[test]
-    fn test_skip_single_comment() {
+    fn skip_single_comment() {
         let source = "let x = //12_000 12_000.50";
 
         let expected = vec![
@@ -998,7 +1003,7 @@ mod tests {
     }
 
     #[test]
-    fn test_skip_multi_comment() {
+    fn skip_multi_comment() {
         let source = "let x = /*\n\
                           12_000 12_000.50\n\
                        */";

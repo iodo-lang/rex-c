@@ -7,14 +7,14 @@ use crate::prelude::*;
 
 use std::sync::Arc;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Node {
     Binding(Binding),
     Return(Expression),
     Expression(Expression)
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Binding {
     pub kind: Keyword,
     pub name: Arc<str>,
@@ -22,7 +22,7 @@ pub struct Binding {
     pub value: Expression
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Expression {
     Unit,
     Tag(Arc<str>),
@@ -40,31 +40,31 @@ pub enum Expression {
     Postfix(Box<Postfix>)
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct If {
     pub condition: Expression,
     pub consequence: Expression,
     pub alternative: Expression
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Match {
     pub value: Expression,
     pub cases: Vec<Case>
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Case {
     pub condition: Expression,
     pub consequence: Expression
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Type {
     
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Fn {
     pub name: Arc<str>,
     pub parameters: Vec<Arc<str>>,
@@ -72,12 +72,12 @@ pub struct Fn {
     pub arity: usize
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Block {
     pub statements: Vec<Node>
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Closure {
     pub name: Arc<str>,
     pub parameters: Vec<Arc<str>>,
@@ -86,32 +86,32 @@ pub struct Closure {
     pub arity: usize
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct FnCall {
     pub func: Expression,
     pub args: Vec<Expression>
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Prefix {
     pub operator: Kind,
     pub value: Expression
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Infix {
     pub operator: Kind,
     pub lhs: Expression,
     pub rhs: Expression
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Postfix {
     pub operator: Kind,
     pub value: Expression
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Ast {
     pub nodes: Vec<Node>
 }

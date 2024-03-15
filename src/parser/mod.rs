@@ -129,7 +129,7 @@ impl<'a, 'b> Parser<'a> {
         Err(anyhow!("Unimplemented"))
     }
 
-    fn parse_expression(&'b mut self, prec: Precedence) -> Result<Expression> {
+    fn parse_expression(&'b mut self, _prec: Precedence) -> Result<Expression> {
         use Kind::*;
         use crate::prelude::Keyword::*;
 
@@ -206,16 +206,31 @@ impl<'a, 'b> Parser<'a> {
     }
 }
 
-mod test {
-    use anyhow::Result;
-
+mod tests {
     use crate::prelude::*;
 
-    fn check_results() {}
+    fn _check_results(_expected: Ast, _actual: Ast) {
+
+    }
 
     #[test]
-    fn test_assignment_parsing() -> Result<()> {
+    fn assignment_parsing() {
         let source = "let x = 12";
+
+        let expected = Ast {
+            nodes: vec![
+                Node::Binding(
+                    Binding {
+                        kind: Keyword::Let,
+                        name: "x".into(),
+                        expl_type: None,
+                        value: Expression::Integer(
+                            "12".into(),
+                        )
+                    }
+                )
+            ],
+        };
 
         let mut compiler = Compiler::new_using_str(
             "assignment parsing test".into(),
@@ -225,11 +240,9 @@ mod test {
         let mut scanner = Scanner::new(&mut compiler);
         let mut parser = Parser::new(&mut scanner);
 
-        let ast = parser.parse_program();
+        let actual = parser.parse_program();
 
-        dbg!(ast);
-
-        Ok(())
+        assert_eq!(expected, actual.unwrap());
     }
 
 }
